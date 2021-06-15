@@ -1,6 +1,8 @@
 # about-nodejs
 some notes about nodejs
 
+## master分支
+
 ## 读一本Node.js实战
 
 全书一共 306 页（含附录），主要是关于 node.js 部分的内容，包括部分 `javascript` 和 `ECMA Script 2015` 部分，还有部分介绍前端框架以及开发桌面应用，附录部分主要是一些术语表，以及安装node.js的一些指南。
