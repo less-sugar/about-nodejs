@@ -84,3 +84,215 @@ Koa的可配置水平让一些开发人员望而却步。除非有现成的代�
 | 插件架构 | Express 中间件                              |
 | 文档     | http://www.kraken.com/help/api    |
 | 授权许可 | Apache 2.0                                  |
+
+⭐ kraken可以作为 Express 的中间件使用。
+
+
+
+#### 定义路由
+
+`Kraken` 中路由被定义为跟 **控制器** 在一起。这和 Express 路由定义和路由处理器分开的做法不同，kraken 采用了 **MVC** 的方式。
+
+`Kraken` 的路由 API 是 `EXpress-enrouten` ，并且它会根据文件所在目录推断路由。
+
+例：
+
+​	controllers
+
+​		|- user
+
+​			|- create.js
+
+​			|- list.js
+
+那么 Kraken 会生路由 /user/create 和 /user/list
+
+
+
+#### REST API
+
+​		Kraken 可以做 REST API，但没有社么特别的支持。express-enrouten 可以跟解析 JSON 的中间件相结合，所以能实现 REST API。
+
+​		Kraken 的路由器支持 **DELETE**，**GET**，**POST**，**PUT** 等 HTTP 动词，在实现 REST 时跟 Eexpress 类似。
+
+
+
+#### advantage
+
+​	Kraken 项目的从大体上差不多，Kraken 项目一般不会改变文件和目录的位置。
+
+​	模板库（Dust）和国际化库（Makara）都是 Kraken 自带的，所以可以进行无缝集成。
+
+
+
+#### disadvantage
+
+相对而言学习难度较大。一些在 `Express` 中可以通过编程实现的任务，在 kraken 中要通过 JSON 配置文件来做，而且有时候很难确定到底要哪些 JSON 属性才能得到预期的结果。
+
+
+
+### hapi
+
+hapi 是一个服务器框架，重点在 **Web API** 的开发。hapi 有自己的插件API，完全没有客户端支持，也没有数据模型层。
+
+> hapi 的主要特性
+
+| 库类型   | HTTP 服务器库                      |
+| -------- | ---------------------------------- |
+| 功能特性 | 高层服务器容器抽象，安全的头部信息 |
+| 建议应用 | 单页 Web 程序、HTTP API            |
+| 插件架构 | hapi 插件                          |
+| 文档     | http://hapijs.com/api              |
+| 授权许可 | BSD 3条款                          |
+
+
+
+#### 定义路由
+
+​		hapi 有创建路由的 API 。要创建路由必须提供一个包含请求方法，URL，和回调函数的对象，其实回调函数就是 **路由处理器**。
+
+​		例：
+
+```js
+const Hapi = require('hapi')
+const server = new Hapi.Server()
+
+server.connection({
+    host: 'localhost',
+    port: 8888
+})
+
+server.route({
+    method: 'GET',
+    path: '/hello',
+    handler: (request, reply) => {
+        return reply('hello world')
+    }
+})
+
+server.start((err) => {
+    if (err) throw err
+    console.log('Server running at:', server.info.uri)
+})
+```
+
+
+
+#### 插件
+
+​		hapi 有自己的插件架构，并且大部分项目都需要靠插件完成认证和输入校验等功能。
+
+​		想要把一个插件添加到hapi 项目中，需要先用 server.register 方法注册这个插件。然后根据实际业务情景去配置插件的使用。
+
+
+
+#### REST API
+
+​		根据路由的定义可知，如果想实现 REST API ,只需要按照定义路由的方式，给同一个请求地址配置不同的请求参数，从而处理不同的业务。
+
+
+
+#### advantage
+
+​		hapi 的插件 API 是它最大的优势。另外，由于 hapi 是基于HTTP服务器的，所以适合在某些部署场景中。如果要部署很多相互连接的服务器，或者需要做负载均衡时，hapi 基于服务器的 API 可能比 Express 或 Koa 好用。
+
+
+
+#### disadvantage
+
+​		hapi 的劣势和 Express 相同：极简，所以对项目结构没有把控。过度依赖插件可能会造成将来难以维护。
+
+
+
+### Sails.js
+
+​		`Sails` 是一个 模型-视图-控制器框架。Sails 不是全栈框架，所以可以和任何前端库或者框架配合使用。
+
+> Sails 的主要特性
+
+| 库类型   | MVC 框架                                    |
+| -------- | ------------------------------------------- |
+| 功能特性 | 有支持数据库的 ORM，生成REST API，websocket |
+| 建议应用 | Rails风格的MVC程序                          |
+| 插件架构 | express 中间件                              |
+| 文档     | http://sailsjs.org/documentation/concepts   |
+| 授权许可 | BSD 3条款                                   |
+
+​		sails 有项目生成器，可以是用 sails 的生成器创建新项目会比较轻松。
+
+
+
+#### 定义路由
+
+​		sails 中将路由称为 **定制路由**，打开 config/route.js，在输出的路由中添加新的属性极客添加路由。属性的格式是HTTP动词加上部分 URL。
+
+
+
+#### REST API
+
+​		Sails 将数据库模型和控制器结合进了API中，可以用命令 `sails generate api resource-name` 生成REST API。要使用数据库，首先需要安装 **数据库适配器** 。找到 **Waterline MySQL** 包的名字，然后把它添加到项目中：
+
+​		npm install --save waterline sails-mysql
+
+​		接下来，打开 config/connection.js，将 MySQL 服务器的连接信息填好。Salis 模型文件中可以指定数据库连接，所以不用的模型可以使用不同的数据库。也就是说可以把用户会话数据放在 Radis 之类的数据库中，而把需要持久保存的数据放到 MySQL 这样的关系型数据库中。
+
+​		Waterline 是 Salis 的数据库系统库，除了支持多个数据库，它还能定义表和列名，以支持一流的数据库模型。另外，它的查询 API 支持 promise。
+
+  
+
+#### advantage
+
+​		可以快速设置项目，快速添加典型的 REST API。
+
+​		因为 Salis 项目的文件系统都是一样的，所以有利于创建新项目和相互合作。
+
+
+
+#### disadvantage
+
+​		与其他MVC的框架一样：路由 API 意味着我们在设计程序时必须考虑到 Sails 的路由特性，并且由于 Waterline 的处理方式，可能很难将数据库模式调整为符合他的要求的样子。
+
+
+
+### DerbyJS
+
+​		DerbyJS 是全栈框架，支持数据同步和视图的服务器端渲染。它用到了 MongoDB 和 Redis，数据同步层是由 shareJS 提供的，支持冲突的自动解析。
+> DerbyJS 的主要特性
+
+| 库类型   | 全栈框架                          |
+| -------- | --------------------------------- |
+| 功能特性 | 有支持数据库的 ORM（Racer），同构 |
+| 建议应用 | 由服务器端支持的单页 Web 程序     |
+| 插件架构 | DerbyJS 插件                      |
+| 文档     | http://derbyjs.com/docs/derby-0.6 |
+| 授权协议 | MIT                               |
+⭐：运行 DerbyJS 的例子需要安装 MongoDB 和 Redis。
+
+
+
+#### 定义路由
+
+​		DerbyJS 中的路由是用 derby-router 实现的。因为是基于 Express 的，所以 DerbyJS 的路由 API 跟服务器端路由类似，浏览器中用的也是这个路由模块。
+
+​		因为 DerbyJS 是全栈框架，所以它添加路由的方式跟其他框架不太一样。对于基本的路由而言，最理想的添加方式是添加一个视图。
+
+
+
+#### REST API
+
+​		在 DerbyJS 创建 RESTful API 需要用 Express 添加路由和路由处理器。DerbyJS 项目中有个 server.js 文件，可以用 Express 创建服务器。
+
+​		在服务器路由文件中，可以用 app.use 装载另外一个 EXpress 程序，所以可以将 REST API 作为一个完全独立的 Express 程序，然后作为主程序的DerbyJs 程序装载它。
+
+
+
+#### advantage
+
+​		DerbyJs 有数据库模型 API 和数据同步 API。你可以很方便的搭建单页 Web 程序和现代化的实时程序。因为它自对 WebSocket 和同步的支持，所以不同我们费心去选择 WebSocket 库，或者任何在服务器和客户端之间同步数据。
+
+
+
+#### disadvantage
+
+​		有服务器端或客户端相关经验的人不喜欢使用 DerbyJs。
+
