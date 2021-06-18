@@ -173,7 +173,7 @@ server.listen(8888)
 
 需要事先把这些任务按与其的执行顺序放到一个数组中，完成一个任务后按照顺序从数组中取下一个。
 
-![](D:\note-space\images\control-series.png)
+![](.\images\control-series.png)
 
 **核心code**
 
@@ -237,7 +237,7 @@ next()
 
 首先将所有执行任务放置于一个数组当中，后续遍历数组，执行任务。
 
-![](D:\note-space\images\control-parallel.png)
+![](.\images\control-parallel.png)
 
 **code**
 
