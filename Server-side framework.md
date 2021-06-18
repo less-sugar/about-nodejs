@@ -431,6 +431,39 @@ module.exports = app => {
 $ slc loopback:model project
 ```
 
-
-
 ​		slc 命令会带着你一步一步创建，让你选择这个模型是否只用在服务器端，并设置一些属性和校验器。创建完成之后，可以查看对应的 JSON 文件。用这样的 JSON 文件来定义模型的行为更轻便，其中包括了你之前指定的所有属性。
+
+
+
+#### advantage
+
+- LoopBack 减少了堆砌重复代码的操作。
+- 方面，一个命令行工具既可生成一个完整的 RESTful Web API 程序。
+- LoopBack 对前端代码没有太多的限制。
+- 可以与移动端相通信。集成 LoopBack 的SDK 就可以给 IOS 以及 Android 推送消息。
+
+
+
+#### disadvantage
+
+​		LoopBack 基于 JSON 的模型API 和大部分 JavaScript 数据库 API 都不同，有一定的学习成本。由于 HTTP 层是基于 Express 的，所以需要方面都限制与 Express。
+
+
+
+## 如何选择
+
+既然有这么多的 Node 框架，那么应该如何进行选择呢
+
+![](D:\note-space\images\choose_Node_server-side-framework.png)
+
+ 
+
+## 总结
+
+- Koa 轻便、极简，在中间件中使用 ES2015生成器语法。适合依赖外部 Web API 的单页 Web 程序。
+- hapi 的重点是 HTTP 服务和路由。适合由很多小服务器组成的轻便后台。
+- Flatiron 是一组解耦的模块，既可以当作 Web MVC 框架来用，也可以当作更轻便的 Express 库。Flatiron 跟 Connect 中间件是兼容的。
+- Kraken 是基于 Express 的，添加了安全特性，可以用于 MVC。
+- Sails.js 是Rails / Django 风格的 MVC 框架。由 ORM 和模板系统。
+- DerbyJs 是个同构框架，适合实时的程序。
+- LoopBack 帮我们省去了写套路化代码的工作。它可以快速生成带有数据库支持的 REST API，并且有个 API 管理页面。
