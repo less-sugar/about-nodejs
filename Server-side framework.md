@@ -454,7 +454,7 @@ $ slc loopback:model project
 
 既然有这么多的 Node 框架，那么应该如何进行选择呢
 
-![](.\images\choose_Node_server-side-framework.png)
+![](https://raw.githubusercontent.com/less-sugar/about-nodejs/master/images/choose_Node_server-side-framework.png)
 
  
 
