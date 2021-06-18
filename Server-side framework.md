@@ -1,22 +1,22 @@
-## Server-side framework
+# Server-side framework
 
 - 使用热门的 **Node Web** 框架
 - 选择合适的框架
 - 用 **Web** 框架搭建 **Web** 程序
 
-### 用户画像
+## 用户画像
 
 为了避免在每个项目上都用同一个框架。能够做到兼收并蓄、针对每个问题组使用合适的工具则更好。用用户画像考虑设计问题是通用的做法，因为这在某种程度上能让设计师跟用户产生共鸣。
 
 
 
-### 框架是什么？
+## 框架是什么？
 
 从专业角度来看，一些服务器端框架根本不是框架。关于框架这个词不同的程序员对它有不同的理解。在 Node 社区，大部分的项目都应该叫做`模块`。
 
 
 
-### Koa
+## Koa
 
 `Koa`是以 `Express` 为基础开发的，但它用 `ES2015` 中的生成器语法来定义中间件。也就是说几乎可以编写异步的中间件。在`Koa`  中可以使用 `yield` 退出和重载中间件。
 
@@ -71,7 +71,7 @@ Koa的可配置水平让一些开发人员望而却步。除非有现成的代�
 
 
 
-### Kraken
+## Kraken
 
 `Kraken` 是基于 `Express` 的，又通过 `Paypal` 开发的一些定制模块添了些新功能。为程序提供安全层的 `Lusca` 是其中特别使用的一个模块。虽然 `Lusca` 可以独立于 `Kraken` 使用，但 `Kraken` 还有一个优势是它预定义的项目结构。
 
@@ -131,7 +131,7 @@ Koa的可配置水平让一些开发人员望而却步。除非有现成的代�
 
 
 
-### hapi
+## hapi
 
 hapi 是一个服务器框架，重点在 **Web API** 的开发。hapi 有自己的插件API，完全没有客户端支持，也没有数据模型层。
 
@@ -204,7 +204,7 @@ server.start((err) => {
 
 
 
-### Sails.js
+## Sails.js
 
 ​		`Sails` 是一个 模型-视图-控制器框架。Sails 不是全栈框架，所以可以和任何前端库或者框架配合使用。
 
@@ -254,7 +254,7 @@ server.start((err) => {
 
 
 
-### DerbyJS
+## DerbyJS
 
 ​		DerbyJS 是全栈框架，支持数据同步和视图的服务器端渲染。它用到了 MongoDB 和 Redis，数据同步层是由 shareJS 提供的，支持冲突的自动解析。
 > DerbyJS 的主要特性
@@ -296,3 +296,141 @@ server.start((err) => {
 
 ​		有服务器端或客户端相关经验的人不喜欢使用 DerbyJs。
 
+
+
+## Flatiron.js
+
+`Flatiron` 是一个 web 框架，有 URL 路由、数据管理、中间件、插件和日志功能。 Flatiron的模块在设计是就考虑了`耦合性`，所以可以分开使用。Flatiron 的模块不是用 Express 或 COnnect 写的，但是它的中间件可以和 Connect 兼容。
+
+> Flatiron.jS 的主要特性
+
+| 库类型   | 模块化MVC框架                                 |
+| -------- | --------------------------------------------- |
+| 功能特性 | 数据库管理层（Resourceful），解耦的可重用模块 |
+| 建议应用 | 轻量的MVC程序，在其他框架中使用 Flatiron 模块 |
+| 插件架构 | Broadway插件 API                              |
+| 文档     | https://github.com/flatiron                   |
+| 授权协议 | MIT                                           |
+
+Flatiron 拥有自己的脚手架工具。安装Flatiron。
+
+```shell
+npm install -g flatiron
+```
+
+使用脚手架创建项目
+
+```shel
+flatiron create flatiron-app
+```
+
+⭐：通过 `this.res`  返回相应。
+
+
+
+#### 定义路由
+
+​		Flatiron 的路由库叫 `Dirctor`。它既能用于服务器端路由，也支持浏览器中的路由，所以可以用来制作单页程序。Director 使用 Express 风格的 HTTP 动词路由。相应数据时，可以用 `res.writeHead` 发送相应头部，用`res.end` 发送相应的主体部分。
+
+```js
+router.get('/', () => {
+    this.res.writeHead(200, { 'content-type': 'text/plain' })
+    this.res.end('Hello world')
+})
+```
+
+
+
+​		亦可以定义一个路由表对象，把路由 API 当作类来用。这种方法需要 `初始化` 一个新的路由器，然后用 `dispatch` 方法来处理HTTP请求：
+
+```js
+const htpp = require('http')
+const director = require('director')
+
+const router = new director.http.Router({
+    '/example': {
+        get: () => {
+            this.res.writeHeade(200, { 'content-type': 'text/plan' })
+        }
+    }
+})
+
+const server = http.createServer((req, res) => {
+    router.dispatch(req, res)
+})
+```
+
+
+
+#### REST API
+
+​		在 Flatiron 中，可以用 EXpress 风格的标准 HTTP 动词方法创建 REST API，或者用 Director 的作用域路由功能。这个功能可以基于 URL 的组成和 URL 的参数对路由分组。
+
+```js
+router.path(/\/users\/(\w+)/, () => {
+    this.get((id) => {});
+    this.post((id) => {});
+    this.delete(id => {});
+    this.put(id => {})
+})
+```
+
+
+
+#### advantage
+
+​		Flatiron 的优势也是显而易见的，Flatiron 的解耦式设计就是它最大的优势所在。Flatiron 拥有自己的插件管理器，使用社区中的插件更加容易。
+
+
+
+#### disadvantage
+
+​		在大型的 MVC 项目中，Flatiron 不想其他框架那么好用。
+
+
+
+## LoopBack
+
+​		`LoopBack` 是一个 API 框架，但它的特性很适合跟数据库配合，也很适合跟 MVC 程序配合。甚至还有一个浏览和管理 REST API 的 web 界面。如果是要给移动端和桌面端程序创建 Web API 的框架，那就是`LoopBack`。
+
+> LookBack 的主要特性
+
+| 库类型   | API框架                                           |
+| -------- | ------------------------------------------------- |
+| 功能特性 | ORM、API用户界面、WebSocket、客户端SDK（包括IOS） |
+| 建议应用 | 支持多客户端的API（移动端、桌面端、Web）          |
+| 插件架构 | Express中间件                                     |
+| 文档     | http://loopback.io/doc                            |
+| 授权协议 | MIT                                               |
+
+​		⭐：创建 LoopBack 项目需要 LoopBack 的命令行工具。
+
+
+
+#### 定义路由
+
+​		LoopBack 中路由可以在 Express 这个层面添加。创建 server/boot/routes.js，通过 LoopBack 路由实例添加一个新路由。
+
+```js
+module.exports = app => {
+    const router = app.loopback.Router()
+    router.get('/hello', (req, res) => {
+        res.send('hello world')
+    })
+    app.use(router)
+}
+```
+
+
+
+#### REST API
+
+​		使用模型生成器创建 REST API 是最方便的。在你全局安装了 LoopBack 之后，可以使用 slc 命令。比如说，如果添加名为 project的新模型，则运行
+
+```shell
+$ slc loopback:model project
+```
+
+
+
+​		slc 命令会带着你一步一步创建，让你选择这个模型是否只用在服务器端，并设置一些属性和校验器。创建完成之后，可以查看对应的 JSON 文件。用这样的 JSON 文件来定义模型的行为更轻便，其中包括了你之前指定的所有属性。
