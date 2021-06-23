@@ -87,3 +87,65 @@ module.exports = app;
 - POST    /login：登录。
 - GET    /logout：登出。
 
+
+
+#### 渲染视图
+
+​		视图渲染的过程大概可以表述为：把数据传递给视图，然后视图对数据进行转换，对 Web 程序来说，通常是转换成 HTML。
+
+​		Express 有两种渲染视图的方法：程序层用：app.render()，在请求或者响应层用 res.render()，Express 内部是前一种。在 `./routers/index.js`  中会调用 `res.render('index')` 的函数，渲染的是 `./views/index.ejs` 模板，代码如下
+
+```js
+router.get('/', (req, res, next) => {
+    res.render('index', {title: 'Express'}), // 渲染 index.ejs 文件，并传递数据处理。
+})
+```
+
+​	
+
+###### 配置视图系统
+
+ 		Express 视图系统的配置很简单。虽然 generator 已经生成好了，但还是应该了解一下底层的配置机制，以便在需要时进行修改。着重​介绍三个部分：
+
+​		:ballot_box_with_check:：调整视图的查找；
+
+​		:ballot_box_with_check:：配置默认的模板引擎；
+
+​		:ballot_box_with_check:：启用视图缓存，减少文件 I/O。
+
+
+
+**改变查找目录**
+
+​		下面的代码片段是 Express 的可执行程序创建的 views 设定的：
+
+​		`app.set('views', path.join(__dirname, 'views'));`	
+
+这个配置项指明了 Express 查找视图的目录。
+
+
+
+**使用默认的模板引擎**
+
+​		用 Express 生成程序时，我们在命令行用 -e 指定模板引擎 ejs，所以 view engine 被设定成 ejs。Express 要靠扩展名确定用哪个模板引擎渲染文件，但有个这个配置项，我们可以省略文件名后缀。
+
+​		Express 同样支持多引擎渲染，如下列代码所示：
+
+```js
+app.set('view engine', 'pug')
+app.get('/', function(req, res) {
+    res.render('index')
+})
+app.get('/ejs', function(req, res) {
+    res.render('rss.ejs')
+})
+```
+
+
+
+###### **视图缓存**
+
+​		在成产环境中，view cache 是默认开启的，以防后续的 `render()` 从硬盘中读取模板文件。view cache 被禁用时，每 请求都会从硬盘上读取模板，启用了 view cache 后，模板只需要读取一次硬盘。
+
+![](https://raw.githubusercontent.com/less-sugar/about-nodejs/master/images/exprees-view_cache.png)
+
