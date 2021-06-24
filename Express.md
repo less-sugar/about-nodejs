@@ -1,6 +1,6 @@
 ## Express
 
-使用 Express-generator 制作在线留言板。借用这个项目，了解 Express。
+使用 Express-generator 制作在留言板。借用这个项目，了解 Express。
 
 #### 安装
 
@@ -148,4 +148,268 @@ app.get('/ejs', function(req, res) {
 ​		在成产环境中，view cache 是默认开启的，以防后续的 `render()` 从硬盘中读取模板文件。view cache 被禁用时，每 请求都会从硬盘上读取模板，启用了 view cache 后，模板只需要读取一次硬盘。
 
 ![](https://raw.githubusercontent.com/less-sugar/about-nodejs/master/images/exprees-view_cache.png)
+
+
+
+###### 视图查找
+
+​		查找视图的过程跟 `require()` 查找模块的过程差不多。在程序中调用了 res.render() 或者 app.render() 后， express 会先检查有没有这样的绝对路径，接着找到视图目录的相对路径。最后会尝试找目录中的 index  文件。如果还是为找到就会抛出异常。
+
+
+
+###### 将数据传递给视图的方法
+
+​		在 Express 中，要给被渲染的驶入传递数据有几种办法，其中最常用的是将要传递的数据作为 res.render() 的参数。此外，还可以在路由处理器之前的中间件设定一些变量，比如用 app.locals 传递程序层面的数据，用 res.locals 传递请求层面的数据。
+
+​		默认情况下，Express 只会向视图中传递一个程序级变量 —— settings，这个对象中包含所有用 app.set() 设定的值。
+
+
+
+#### Express 路由入门
+
+- 用特定的路由中间件校验用户提交的内容；
+- 实现特定路由的校验。·
+
+###### 前期分析：
+
+1. 创建数据库连接（此时方便使用，选用redis）
+2. 需要一个用于提交的表单页面
+3. 创建消息的动作对应的操作
+4. 访问全部消息的列表页
+
+
+
+###### 集体实现：
+
+**step1：创建redis连接**
+
+​		准备工作：
+
+​			1、新建文件 models/entry.js
+
+​			2、安装 node-redis `yarn add redis --save`
+
+​		书写代码：
+
+​			在 models/entry.js 中写入下列代码
+
+```js
+const redis = require('redis')
+const db = redis.createClient()
+
+class Entry {
+  constructor(obj) {
+    for (const key in obj) {
+      this[key] = obj[key]
+    }
+  }
+
+  save(cb) {
+    const entryJSON = JSON.stringify(this)
+    db.lpush(
+      'entries',
+      entryJSON,
+      err => {
+        if (err) return cb(err)
+        cb()
+      }
+    )
+  }
+
+  static getRange(from, to, cb) {
+    db.lrange('entries', from, to ,(err, items) => {
+      if (err) return cb(err)
+      let entries = []
+      items.forEach(item => {
+        entries.push(JSON.parse(item))
+      })
+      cb(null, entries)
+    })
+  }
+
+}
+
+module.exports = Entry
+```
+
+
+
+**step2：创建表单页面**
+
+​		新建文件 views/post.ejs，创建 post 视图。并写入以下代码
+
+```ejs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/stylesheets/style.css">
+</head>
+<body>
+    <h1><%= title %></h1>
+    <p>Fill in the form bellow to add a new post.</p>
+    <form action="/post" , method="POST">
+      <p><input type="text" name="entry[title]" placeholder="Title"></p>
+      <p><textarea name="entry[body]" placeholder="Body"></textarea></p>
+      <p><input type="submit" value="post"></p>
+    </form>
+</body>
+</html>
+```
+
+​		渲染输出 Web UI 页面。新建文件 routers/entries.js。在 entryis.js 中写入现阶阶段需要的功能
+
+```js
+exports.form = (req, res) => {
+  res.render('post', {title: 'POST'})
+}
+```
+
+
+
+**step3：创建消息的动作对应的操作**
+
+​		将用户创建的消息，保存至 redis 中，来做到模拟数据库存储的效果。在 views/entries.js 中继续写入以下代码。
+
+```js
+const Entry = require("../models/entry")
+
+exports.submit = (req, res, next) => {
+  const data = req.body.entry
+  const user = res.locals.user
+  const username = user ? user.name : null
+  const entry = new Entry({
+    username: username,
+    title: data.title,
+    body: data.body
+  })
+  entry.save(err => {
+    if (err) return next(err)
+    res.redirect('/')
+  })
+}
+```
+
+
+
+**step4：访问全部消息的列表页**
+
+​		创建 views/etries.ejs 。写入下列代码：
+
+```ejs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+</head>
+<body>
+  <% entries.forEach((entry) => { %>
+    <div class="entry">
+      <h3><%= entry.title %></h3>
+      <p><%= entry.body %></p>
+      <p> Posted by <%= entry.username %> </p>
+    </div>
+  <% }) %>
+</body>
+</html>
+```
+
+​		在 routers/entries 文件中设置对应的路由：
+
+```js
+exports.list = (req, res, next) => {
+  Entry.getRange(0, -1, (err, entries) => {
+    if (err) next(err)
+    res.render('entries', {
+      title: 'Entries',
+      entries: entries
+    })
+  })
+}
+```
+
+
+
+最后将所有的路由都注册到 app.js 中
+
+```js
+const entries = require('./routes/entries')
+
+app.get('/post', entries.form)
+app.post('/post',entries.submit)
+app.get('/', entries.list)
+```
+
+
+
+**亿点点优化1**
+
+​		我们应该构建灵活的检验中间件来保证程序的正常运行。程序在运作过程中会出现各种意外，可能是自身的，也可能是外在的23，那么使用中间件来保证使用是不可或缺的。
+
+- 定义公共方法41
+
+定义公共的方法，用于中间件的使用。
+
+```js
+function parseField(filed) {
+  return filed
+    .split(/\[|\]/)
+    .filter(s => s)
+}
+
+function getField(req, filed) {
+  let val = req.body
+  filed.forEach(prop => {
+    val = val[prop]
+  })
+  return val
+}
+```
+
+
+
+- 校验必填项
+
+定义一个校验必填项的中间件来保证必填项的输入。要求可以灵活使用，可以重复使用。
+
+```js
+exports.required = (filed) => {
+  filed = parseField(filed)
+  return (req, res, next) => {
+    if (getField(req, filed)) {
+      next()
+    } else {
+      res.end(`${filed.join(' ')} is required`)
+      res.redirect('back')
+    }
+  }
+}
+```
+
+
+
+- 判断长度是否符合提交的条件
+
+定义一个用于校验是否合规的中间件，减少脏数据的产生。
+
+```js
+exports.lengthAbove = (field, len) => {
+  field = parseField(field)
+  return (req, res, next) => {
+    if (getField(req, field).length > len) {
+      next()
+    } else {
+      const fields = field.join(' ')
+      res.end(`${fields} must have more than ${len} chartacters`)
+      res.redirect('back')
+    }
+  }
+}
+```
 
