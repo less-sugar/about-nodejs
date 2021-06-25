@@ -413,3 +413,141 @@ exports.lengthAbove = (field, len) => {
 }
 ```
 
+
+
+#### 用户认证
+
+从新创建一个认证系统，改系统包括：
+
+- 存储和认证已注册用户；
+- 注册功能；
+- 登录功能；
+- 加载用户信息的中间件。
+
+还是用 Redis 作为用户账号的存储。
+
+
+
+###### 保存和加载用户记录
+
+本部分要实现用户加载、保存、和认证。任务清单是：
+
+- 用 packages.json 定义程序的依赖项；
+- 创建用户模型；
+- 用 redis 加载和保存用户信息；
+- 用 bcrypt 增强用户密码的安全性；
+- 实现用户认证。
+
+Bcrypt 是一个加盐的哈希函数。可作为专门模块对密码做哈希处理。
+
+
+
+###### 创建用户模型
+
+创建 model/user.js 文件作为用户模型，并写入以下代码。
+
+- 创建用户模型。
+- 添加 save 方法，将用户保存至 redis。
+- 添加 update 方法，更新 redis 中的用户。
+- 添加加密函数，hashPassword 进行加盐加密处理密码函数。
+- 静态方法 `getId` 查询 id，静态方法 `getByName` 根据 用户名查询用户。 静态方法 `get`  获取一个新的对象模型。
+- 静态方法 `authenticate` 进行用户名和密码校验。
+
+```js
+const redis = require('redis')
+const bcrypt = require('bcrypt')
+const db = redis.createClient()
+
+class User {
+  constructor(obj) {
+    for (const key in obj) {
+      this[key] = obj[key]
+    }
+  }
+
+  save(cb) {
+    if (this.id) {
+      this.update(cb)
+    } else {
+      db.incr('user:id', (err, id) => {
+        if (err) return cb(err)
+        this.id = id
+        this.hashPassword((err) => {
+          if(err) return cb(err)
+          this.update(cb)
+        })
+      })
+    }
+  }
+
+  update(cb) {
+    const id = this.id
+    db.set(`user:id:${this.name}`, id ,err => {
+      if (err) return cb(err)
+      db.hmset(`user:${id}`, this, err => {
+        cb(err)
+      })
+    })
+  }
+
+  hashPassword(cb) {
+    bcrypt.genSalt(12, (err, salt) => {
+      if (err) return cb(err)
+      this.salt = salt
+      bcrypt.hash(this.pass, salt, (err, hash) => {
+        if (err) return cb(err)
+        this.pass = hash
+        cb()
+      })
+    })
+  }
+
+  static getByName(name, cb) {
+    User.getId(name, (err, id) => {
+      if (err) return cb(err)
+      User.get(id, cb)
+    })
+  }
+
+  static getId(name, cb) {
+    db.get(`user:id:${name}`, cb)
+  }
+
+  static get(id, cb) {
+    db.hgetall(`user:${id}`, (err, user) => {
+      if (err) return cb(err)
+      cb(null, new User(user))
+    })
+  }
+
+  static authenticate(name, pass, cb) {
+    User.getByName(name, (err, user) => {
+      if (err) return cb(err)
+      if (!user.id) return cb()
+      bcrypt.hash(pass, user.salt, (err, hash) => {
+        if (err) return cb(err)
+        if (hash === user.hash) return cb(null, user)
+        cb()
+      })
+    })
+  }
+
+}
+
+module.exports = User
+```
+
+
+
+#### 注册新用户
+
+注册功能的实现：
+
+:ballot_box_with_check:：将注册和登录路由映射到URL地址上；
+
+:ballot_box_with_check:：添加显示注册表单的注册路由处理器；
+
+:ballot_box_with_check:：实现用户数据存储功能，存储从表单提交上来的数据。
+
+
+
