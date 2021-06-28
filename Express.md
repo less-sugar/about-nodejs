@@ -348,11 +348,11 @@ app.get('/', entries.list)
 
 
 
-**亿点点优化1**
+**亿点点优化**
 
 ​		我们应该构建灵活的检验中间件来保证程序的正常运行。程序在运作过程中会出现各种意外，可能是自身的，也可能是外在的23，那么使用中间件来保证使用是不可或缺的。
 
-- 定义公共方法41
+- 定义公共方法
 
 定义公共的方法，用于中间件的使用。
 
@@ -550,4 +550,169 @@ module.exports = User
 :ballot_box_with_check:：实现用户数据存储功能，存储从表单提交上来的数据。
 
 
+
+1. 添加注册路由
+		在 app.js 中添加相关的路由。并且在 router/register 定义相关的路由逻辑。先处理渲染注册模板的路由。
+	
+	```js
+	exports.form = (req, res) => {
+	  res.render('register', {title: 'Register'})
+	}
+	```
+
+
+
+2. 创建注册表单
+
+   ​	创建 views/reigster.ejs 提供注册的 HTML 页面。此时事先创建好消息模块，后续在创建消息提醒的 ejs 文件。
+
+   ```ejs
+   <!DOCTYPE html>
+   <html>
+     <head>
+       <title><%= title %></title>
+       <link rel="stylesheet" href="/stylesheets/style.css">
+     </head>
+     <body>
+       <h1><%= title %></h1>
+       <p>Fill in the form below to sign up!</p>
+       <% include messages %>
+       <form action="/register" method="POST">
+         <p>
+           <input type="text" name="user[name]" placeholder="Username">
+         </p>
+         <p>
+           <input type="password" name="user[pass]" placeholder="Password">
+         </p>
+         <p><input type="submit" value=" Sign Up"></p>
+       </form>
+     </body>
+   </html>
+   ```
+
+   
+
+3. 把反馈消息传达给用户。
+
+   ​	在大多数应用场景中，将反馈消息传达给用户都是必须要做的工作。此程序中的 messages.ejs 就是用来做消息处理的。它会被嵌入到许多模板之中。
+
+   ​	在 views 目录下创建一个名为 messages.ejs 的文件，把下面的代码写入到这个文件里。折断代码会检查 locals.messages 是否存在，如果有，就会循环遍历这个变量以显示消息对象，根据 type 属性来定义消息的类型。调用完消息后要通过 removeMessage 来清空消息。
+
+   ```ejs
+   <% if (locals.messages) { %>
+     <% messages.forEach((message) => { %>
+       <p class='<%= message.type %>'><%= message.message %></p>
+     <% }) %>
+     <% removeMessages() %>
+   <% } %>
+   ```
+
+
+
+4. 在会话中存放临时的消息。
+
+   **PRG**
+
+   ​	Post/Redirect/Get（PRG）是一种常用的 Web 程序设计模式。这种模式是指，用户请求表单，表单数据作为 `HTTP POST` 请求被提交，然后用户被重定向到另外一个 Web 页面上。用户被重定向到哪里取决于表单数据是或否有效。如果表单数据无效，程序会让用户回到表单页面。如果表单数据有效，程序会让用户到新的 Web 页面中。PRG 模式主要是为了防止表单的重复提交。
+
+   **Express中如何处理**
+
+   ​	在 Express 中，用户被重定向后，res.locals 中的内容也会被重置。如果把发给用户的消息存在 res.locals 中，这些消息在显示之前就已经丢失了。把消息存在会话变量中可以解决这个问题。确保消息在重定向后的页面上仍然可以显示。
+
+   **维护用户消息队列**
+
+   ​	创建文件 ./middleware/messages.js ，写入下列代码：
+
+   ```js
+   const express = require('express')
+   
+   function message(req) {
+     return (msg, type) => {
+       type = type || 'info'
+       let sess = req.session
+       sess.message = sess.message || []
+       sess.message.push({type: type, message: msg})
+     }
+   }
+   
+   module.exports = (req, res, next) => {
+     res.message = message(req)
+     res.error = msg => {
+       return res.message(msg, 'error')
+     }
+     res.locals.messages = req.session.message || []
+     res.locals.removeMessages = () => {
+       req.session.messages = []
+     }
+     next()
+   }
+   ```
+
+   ​	这个功能需要会话（session）支持，我们可以使用官方支持的包：express-session。用 `yarn add express-session` 安装，然后添加到 app.js 中。
+
+   ```js
+   const session = require('express-session')
+   ...
+   app.use(session({
+     secret: 'secret',
+     resave: false,
+     saveUninitialized: true,
+   }))
+   ...
+   ```
+
+   ​	这个中间件最好放在 cookie 之后。保证了 session 的正常使用之后，我们需要把 messages 也添加到 app.js 中。
+
+   ```js
+   const messages = require('./middleware/messages');
+   ...
+   app.use(messages)
+   ...
+   ```
+
+
+
+5. 实现用户注册
+
+   ​	之前已经在前端进行了表单提交的操作，我们需要对表单提交的操作做额外的处理。表单提交路由处理器的代码很少，我们只需要处理校验，比如确保用户名被占用；还有保存新用户。
+
+   ​	注册已完成，就会把 user.id 赋值给会话变量，稍后还要通过检查它来判断用户是否通过了认证。如果检验失败，消息会作为 message 变量通过 res.locals.messages 输出到模板中，并且用户会被重定向回注册表单。
+
+   ```js
+   const User = require("../models/user")
+   
+   exports.submit = (req, res, next) => {
+     const data = req.body.user
+     User.getByName(data.name, (err, user) => {
+       if (err) return next(err)
+   
+       if (user.id) {
+         res.error('Username already taken!')
+         res.redirect('back')
+       } else {
+         let user = new User({
+           name: data.name,
+           pass: data.pass
+         })
+         user.save(err => {
+           if (err) return next(err)
+           req.session.uid = user.id
+           res.redirect('/')
+         })
+       }
+     })
+   }
+   ```
+
+
+
+
+#### 总结
+
+- Connect 是一个HTTP框架，可以处理请求前和之后堆叠中间件。
+- Connect 中间件是个函数，它的参数包括 Node 的请求和响应对象，一个调用下一个中间件的函数，以及一个可选的错误对象。
+- Express Web 程序也是用中间件搭建的。
+- 在用 Express 实现 REST API 时，可以用 HTTP 谓定义路由。
+- Express 路由的响应可以是 JSON、HTML 或其他格式的数据。
+- Express 有个简单的模板引擎 API，支持很多种引擎。
 
